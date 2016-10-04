@@ -5,4 +5,4 @@ Utility for reading the FA tickets and suspensions leak.
 * Chain tickets and ticket comments in conversations
 * Filter based on name
 * Filter based on word appearing in message
-* Output in formated JSON
+* Output in nicely formatted text file containing all the useful information
