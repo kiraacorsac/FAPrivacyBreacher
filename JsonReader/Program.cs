@@ -125,26 +125,31 @@ shiftLines(tc.message)));
 
     class DBFilters
     {
-        public static InterestingStuff FilterInteretestingStuff(InterestingStuff s, string name, string keyword)
+        public static InterestingStuff FilterInteretestingStuff(InterestingStuff s, string name, IEnumerable<string> keywords)
         {
             return Tuple.Create(
-                s.Item1.Where(chain => ContainsText(chain.RootTicket.message, keyword)
-                                || chain.TicketComments.Any(tc => ContainsText(tc.message, keyword)))
+                s.Item1.Where(chain => keywords.All(keyword => ContainsText(chain.RootTicket.message, keyword)
+                                                            || chain.TicketComments.Any(tc => ContainsText(tc.message, keyword))))
                        .Where(chain => ContainsText(chain.RootTicket.username, name)
-                                || ContainsText(chain.RootTicket.admin, name)
-                                || chain.TicketComments.Any(tc => ContainsText(tc.username, name))),
+                                    || ContainsText(chain.RootTicket.admin, name)
+                                    || chain.TicketComments.Any(tc => ContainsText(tc.username, name))),
 
                 s.Item2.Where(su => ContainsText(su.enacted_username, name)
                                || ContainsText(su.suspended_username, name))
-                       .Where(su => ContainsText(su.reason_admin, keyword)
-                               || ContainsText(su.reason_private, keyword)
-                               || ContainsText(su.reason_public, keyword))
+                       .Where(su => ContainsText(su.reason_admin, keywords)
+                               || ContainsText(su.reason_private, keywords)
+                               || ContainsText(su.reason_public, keywords))
                                );
         }
 
         private static bool ContainsText(string message, string messageSearchText)
         {
             return message.IndexOf(messageSearchText, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static bool ContainsText(string message, IEnumerable<string> messageSearchText)
+        {
+            return messageSearchText.All(keyword => message.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0);
         }
     }
 
@@ -231,11 +236,11 @@ shiftLines(tc.message)));
             {
                 Console.WriteLine("Insert name of user of interest, or leave blank for all users.");
                 var name = Console.ReadLine();
-                Console.WriteLine("Insert keyword of interest, or leave blank for all.");
-                var keyword = Console.ReadLine();
+                Console.WriteLine("Insert keyword of interest, or leave blank for all. Separate multiple keywords with \"&\" to return messages that contains every keyword.");
+                var keywords = Console.ReadLine().Split('&').ToList().Select(keyword => keyword.Trim());
 
                 Console.WriteLine("Crunching...");
-                var filteredReuslts = DBFilters.FilterInteretestingStuff(stuff, name, keyword);
+                var filteredReuslts = DBFilters.FilterInteretestingStuff(stuff, name, keywords);
                 Console.WriteLine("Done crunching. Generating output...");
                 using (var file = new StreamWriter("filtered_ticket_conversations.txt"))
                 {
